@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  BUYER
+  ACCOUNTANT
+  LAWYER
+  EXISTING_PROPERTY_OWNER
+}
+
+enum DocumentType {
+  PDF
+  TEXT
+  MANUAL
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      UserRole
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Brief {
+  id          String     @id @default(cuid())
+  title       String
+  slug        String     @unique
+  description String?
+  content     String     // MDX content
+  targetRoles UserRole[] // Array of roles that can access this brief
+  isPublished Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("briefs")
+}
+
+model KnowledgeDocument {
+  id          String       @id @default(cuid())
+  title       String
+  content     String       // Extracted text content
+  category    String
+  tags        String[]
+  documentType DocumentType
+  fileName    String?      // Original filename for uploaded files
+  fileSize    Int?         // File size in bytes
+  filePath    String?      // Path to stored file
+  embedding   Float[]      // OpenAI embeddings for semantic search
+  userId      String?      // User who uploaded the document
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("knowledge_documents")
+}
+
+model ContactSubmission {
+  id      String   @id @default(cuid())
+  name    String
+  email   String
+  subject String?
+  message String
+  userId  String?  // Optional: link to user if logged in
+  createdAt DateTime @default(now())
+
+  @@map("contact_submissions")
+}
