@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]/route'
-import { prisma } from '@/lib/prisma'
+import { supabaseDb } from '@/lib/supabase'
 import { 
   getKnowledgeDocuments, 
   searchKnowledgeDocuments,
@@ -30,32 +30,37 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const query = searchParams.get('search')
     const category = searchParams.get('category')
-    const documentType = searchParams.get('type') as 'PDF' | 'TEXT' | 'MANUAL' | null
+    const documentType = searchParams.get('type') as string | null
 
-    let documents
-    
-    if (query) {
-      // Search documents by semantic similarity
-      documents = await searchKnowledgeDocuments(query, 20, category || undefined)
-    } else {
-      // Get all documents with optional filtering
-      documents = await getKnowledgeDocuments(
-        category || undefined,
-        documentType || undefined
-      )
+    // Use Supabase to join manifest and knowledge_documents
+    const client = supabaseDb ? supabaseDb : null;
+    if (!client) {
+      return NextResponse.json({ error: 'Supabase client not available' }, { status: 500 })
     }
-
+    const supabase = (await import('@/lib/supabase')).supabase;
+    const { data: manifests, error } = await supabase
+      .from('manifest')
+      .select('*, document:knowledge_documents(*)')
+      .order('createdAt', { ascending: false });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    let documents = manifests.map((m: any) => m.document).filter(Boolean);
+    if (category) documents = documents.filter((doc: any) => doc.category === category);
+    if (documentType) documents = documents.filter((doc: any) => doc.documentType === documentType);
     return NextResponse.json({
       documents,
       count: documents.length
     })
-
   } catch (error) {
     console.error('Error fetching knowledge documents:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     )
   }

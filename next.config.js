@@ -1,17 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  // Netlify handles this automatically with their plugin
-  // output: 'standalone', // Commented out for Netlify deployment
-  // Image optimization for Netlify
-  images: {
-    unoptimized: true,
-  },
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   // Environment variables for build time
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
@@ -19,6 +9,32 @@ const nextConfig = {
   },
   // External packages for server components (Next.js 15+)
   serverExternalPackages: ['@prisma/client'],
+  // Security and cache headers similar to prior hosting setup
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
+      },
+      {
+        source: '/static/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+    ]
+  },
   // Webpack configuration for better builds
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -33,4 +49,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig

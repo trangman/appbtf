@@ -28,17 +28,99 @@ export interface KnowledgeDocument {
   fileName?: string
 }
 
-// Create embeddings for text content
+// Ultra-conservative token estimation for embedding validation
+function estimateTokensForEmbedding(text: string): number {
+  // ULTRA conservative - based on actual failure at 11,312 tokens from ~16,000 chars
+  // That's about 1.4 chars per token - using 1.2 to be extra safe
+  return Math.ceil(text.length / 1.2)
+}
+
+// Create embeddings for text content with AGGRESSIVE validation
 export async function createEmbedding(text: string): Promise<number[]> {
   try {
+    console.log(`DEBUG EMBEDDING: Starting embedding creation for text length: ${text.length} characters`)
+    console.log(`DEBUG EMBEDDING: First 200 chars: ${text.substring(0, 200)}`)
+    
+    // AGGRESSIVE character limit first - based on actual failure patterns
+    if (text.length > 8000) {
+      console.warn(`DEBUG EMBEDDING: EMERGENCY TRUNCATION: Text too long (${text.length} chars), truncating to 8000 chars`)
+      text = text.substring(0, 8000)
+      console.log(`DEBUG EMBEDDING: Text truncated to ${text.length} characters`)
+    }
+    
+    // Secondary token validation
+    const estimatedTokens = estimateTokensForEmbedding(text)
+    console.log(`DEBUG EMBEDDING: Estimated tokens: ${estimatedTokens}`)
+    
+    const maxTokens = 6000 // Much more aggressive limit
+    
+    if (estimatedTokens > maxTokens) {
+      console.warn(`DEBUG EMBEDDING: EMERGENCY TOKEN TRUNCATION: ${estimatedTokens} estimated tokens > ${maxTokens}, applying emergency truncation`)
+      const maxChars = maxTokens * 1.2 // Ultra conservative
+      text = text.substring(0, maxChars)
+      console.log(`DEBUG EMBEDDING: Emergency token truncation: reduced to ${text.length} characters`)
+    }
+    
+    console.log(`DEBUG EMBEDDING: Final text stats before API call:`, {
+      length: text.length,
+      estimatedTokens: estimateTokensForEmbedding(text),
+      firstWords: text.split(' ').slice(0, 10).join(' '),
+      hasNonAscii: /[^\x00-\x7F]/.test(text)
+    })
+    
+    console.log(`DEBUG EMBEDDING: Getting OpenAI client...`)
     const client = getOpenAIClient()
+    console.log(`DEBUG EMBEDDING: OpenAI client obtained, making API call...`)
+    
     const response = await client.embeddings.create({
       model: 'text-embedding-3-small',
       input: text,
     })
-    return response.data[0].embedding
+    
+    console.log(`DEBUG EMBEDDING: API call successful, processing response...`)
+    console.log(`DEBUG EMBEDDING: Response structure:`, {
+      hasData: !!response.data,
+      dataLength: response.data?.length || 0,
+      hasFirstEmbedding: !!response.data?.[0],
+      embeddingLength: response.data?.[0]?.embedding?.length || 0,
+      usage: response.usage
+    })
+    
+    const embedding = response.data[0].embedding
+    console.log(`DEBUG EMBEDDING: Embedding extraction successful:`, {
+      embeddingLength: embedding.length,
+      firstValues: embedding.slice(0, 5),
+      lastValues: embedding.slice(-5)
+    })
+    
+    return embedding
   } catch (error) {
-    console.error('Error creating embedding:', error)
+    console.error('DEBUG EMBEDDING: Error creating embedding with full details:', {
+      errorType: error?.constructor?.name || 'Unknown',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      stringifiedError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
+      textLength: text.length,
+      estimatedTokens: estimateTokensForEmbedding(text),
+      textPreview: text.substring(0, 100),
+      hasApiKey: !!process.env.OPENAI_API_KEY
+    })
+    
+    // Create more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('429')) {
+        throw new Error(`OpenAI API rate limit exceeded: ${error.message}`)
+      } else if (error.message.includes('401') || error.message.includes('authentication')) {
+        throw new Error(`OpenAI API authentication failed: ${error.message}`)
+      } else if (error.message.includes('400')) {
+        throw new Error(`OpenAI API bad request: ${error.message}`)
+      } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+        throw new Error(`OpenAI API timeout: ${error.message}`)
+      } else if (error.message.includes('network') || error.message.includes('ENOTFOUND')) {
+        throw new Error(`Network error calling OpenAI API: ${error.message}`)
+      }
+    }
+    
     throw error
   }
 }
@@ -287,42 +369,75 @@ COMPLIANCE REQUIREMENTS:
 // Enhanced function to get relevant knowledge including uploaded PDFs
 export async function getRelevantKnowledge(query: string, userRole: string): Promise<string> {
   try {
+    console.log('DEBUG KNOWLEDGE: Starting knowledge retrieval for query:', query)
+    console.log('DEBUG KNOWLEDGE: User role:', userRole)
+    
     // Search both uploaded documents and existing knowledge base
     const searchResults = process.env.OPENAI_API_KEY 
       ? await searchKnowledgeBase(query, 3)
       : []
+      
+    console.log('DEBUG KNOWLEDGE: Search results from uploaded documents:', {
+      count: searchResults.length,
+      documents: searchResults.map(doc => ({ title: doc.title, similarity: doc.similarity }))
+    })
     
     // Check core knowledge for direct matches
     let coreKnowledge = ""
     const queryLower = query.toLowerCase()
     
+    console.log('DEBUG KNOWLEDGE: Checking core knowledge patterns for query:', queryLower)
+    
     // Role-specific knowledge priorities
     const isAccountant = userRole === 'ACCOUNTANT'
     const isLawyer = userRole === 'LAWYER'
     
+    const coreMatches = []
+    
     if (queryLower.includes("foreign") || queryLower.includes("ownership")) {
       coreKnowledge += CORE_KNOWLEDGE["foreign-ownership"].content + "\n\n"
+      coreMatches.push('foreign-ownership')
+      console.log('DEBUG KNOWLEDGE: Added foreign-ownership core knowledge')
     }
     
     if (queryLower.includes("trust") || queryLower.includes("bespoke")) {
       coreKnowledge += CORE_KNOWLEDGE["trust-ownership-model"].content + "\n\n"
+      coreMatches.push('trust-ownership-model')
+      console.log('DEBUG KNOWLEDGE: Added trust-ownership-model core knowledge')
     }
     
     if (queryLower.includes("tax") || queryLower.includes("duty") || isAccountant) {
       coreKnowledge += CORE_KNOWLEDGE["tax-obligations"].content + "\n\n"
+      coreMatches.push('tax-obligations')
+      console.log('DEBUG KNOWLEDGE: Added tax-obligations core knowledge (tax/duty match or accountant role)')
     }
     
     // Lawyers get comprehensive coverage
     if (isLawyer && !coreKnowledge) {
       coreKnowledge += CORE_KNOWLEDGE["foreign-ownership"].content + "\n\n"
       coreKnowledge += CORE_KNOWLEDGE["trust-ownership-model"].content + "\n\n"
+      coreMatches.push('foreign-ownership', 'trust-ownership-model')
+      console.log('DEBUG KNOWLEDGE: Added comprehensive core knowledge for lawyer role')
     }
+    
+    console.log('DEBUG KNOWLEDGE: Core knowledge analysis:', {
+      queryKeywords: queryLower.split(' ').filter(word => word.length > 3),
+      coreMatches,
+      hasCoreKnowledge: !!coreKnowledge,
+      coreKnowledgeLength: coreKnowledge.length,
+      userRole,
+      isAccountant,
+      isLawyer
+    })
     
     // Combine search results and core knowledge
     let contextContent = ""
     
     if (coreKnowledge) {
       contextContent += "RELEVANT KNOWLEDGE BASE:\n" + coreKnowledge
+      console.log('DEBUG KNOWLEDGE: Including core knowledge in context')
+    } else {
+      console.log('DEBUG KNOWLEDGE: No core knowledge patterns matched')
     }
     
     if (searchResults.length > 0) {
@@ -332,12 +447,28 @@ export async function getRelevantKnowledge(query: string, userRole: string): Pro
                           doc.documentType === 'MANUAL' ? 'Legal Brief' : 'Document'
         contextContent += `\n--- ${doc.title} (${sourceType}) ---\n${doc.content}\n`
       })
+      console.log('DEBUG KNOWLEDGE: Including uploaded documents in context')
+    } else {
+      console.log('DEBUG KNOWLEDGE: No uploaded documents found matching query')
     }
+    
+    console.log('DEBUG KNOWLEDGE: Final context summary:', {
+      totalContextLength: contextContent.length,
+      hasCoreKnowledge: !!coreKnowledge,
+      hasUploadedDocs: searchResults.length > 0,
+      coreMatches,
+      uploadedDocsCount: searchResults.length
+    })
     
     return contextContent
     
   } catch (error) {
-    console.error('Error getting relevant knowledge:', error)
+    console.error('DEBUG KNOWLEDGE: Error getting relevant knowledge:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      query,
+      userRole
+    })
     return ""
   }
 } 

@@ -36,7 +36,8 @@ export default function KnowledgePage() {
   })
   const [uploadData, setUploadData] = useState({
     category: 'legal-document',
-    tags: ''
+    tags: '',
+    strategy: 'hybrid'
   })
 
   // Check if user is admin
@@ -64,23 +65,13 @@ export default function KnowledgePage() {
   const loadKnowledgeItems = async () => {
     setLoading(true)
     try {
-      // Load core knowledge items
-      const coreItems = Object.entries(CORE_KNOWLEDGE).map(([key, value]) => ({
-        id: key,
-        title: value.title,
-        content: value.content,
-        category: value.category,
-        tags: value.tags,
-        documentType: 'MANUAL' as const
-      }))
-
       // Load uploaded documents
       const response = await fetch('/api/knowledge')
       if (response.ok) {
         const data = await response.json()
-        setKnowledgeItems([...coreItems, ...data.documents])
+        setKnowledgeItems(data.documents)
       } else {
-        setKnowledgeItems(coreItems)
+        setKnowledgeItems([])
       }
     } catch (error) {
       console.error('Error loading knowledge items:', error)
@@ -126,13 +117,15 @@ export default function KnowledgePage() {
     const file = fileInput?.files?.[0]
     
     if (!file) {
-      alert('Please select a PDF file')
+      alert('Please select a PDF or DOCX file')
       return
     }
 
-    if (file.type !== 'application/pdf') {
-      alert('Only PDF files are supported')
-      return
+    const isPDF = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+    const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.endsWith('.docx');
+    if (!isPDF && !isDocx) {
+      alert('Only PDF and DOCX files are supported');
+      return;
     }
 
     setUploadProgress(true)
@@ -142,6 +135,7 @@ export default function KnowledgePage() {
       formData.append('file', file)
       formData.append('category', uploadData.category)
       formData.append('tags', uploadData.tags)
+      formData.append('strategy', uploadData.strategy)
 
       const response = await fetch('/api/knowledge/upload', {
         method: 'POST',
@@ -152,11 +146,29 @@ export default function KnowledgePage() {
         const result = await response.json()
         alert(`PDF processed successfully! Created ${result.count} knowledge entries.`)
         setShowUploadForm(false)
-        setUploadData({ category: 'legal-document', tags: '' })
+        setUploadData({ category: 'legal-document', tags: '', strategy: 'hybrid' })
         loadKnowledgeItems()
       } else {
-        const error = await response.json()
-        alert(`Upload failed: ${error.error}`)
+        // Handle both JSON and non-JSON error responses
+        let errorMessage = `Upload failed (${response.status})`
+        
+        // Clone the response so we can try multiple parsing methods
+        const responseClone = response.clone()
+        
+        try {
+          const error = await responseClone.json()
+          errorMessage = `Upload failed: ${error.error}`
+        } catch {
+          // If JSON parsing fails, try to get text response from original
+          try {
+            const textResponse = await response.text()
+            errorMessage = `Upload failed: ${textResponse.substring(0, 200)}` // Limit text length
+            console.log('Server error response:', textResponse)
+          } catch {
+            errorMessage = `Upload failed: Server error (${response.status})`
+          }
+        }
+        alert(errorMessage)
       }
     } catch (error) {
       console.error('Error uploading file:', error)
@@ -193,12 +205,25 @@ export default function KnowledgePage() {
           setEditingItem(null)
           loadKnowledgeItems()
         } else {
-          const error = await response.json()
-          alert(`Update failed: ${error.error}`)
+          let errorMessage = `Update failed (${response.status})`
+          const responseClone = response.clone()
+          try {
+            const error = await responseClone.json()
+            errorMessage = `Update failed: ${error.error}`
+          } catch {
+            try {
+              const textResponse = await response.text()
+              errorMessage = `Update failed: ${textResponse.substring(0, 200)}`
+              console.log('Server error response:', textResponse)
+            } catch {
+              errorMessage = `Update failed: Server error (${response.status})`
+            }
+          }
+          alert(errorMessage)
         }
       } else {
-        // Add new item to database
-        const response = await fetch('/api/knowledge', {
+        // Add new item to database using the new manual entry API
+        const response = await fetch('/api/knowledge/create', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -207,7 +232,7 @@ export default function KnowledgePage() {
             title: formData.title,
             content: formData.content,
             category: formData.category,
-            tags: formData.tags.split(',').map(tag => tag.trim())
+            tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
           })
         })
 
@@ -217,8 +242,21 @@ export default function KnowledgePage() {
           setShowAddForm(false)
           loadKnowledgeItems()
         } else {
-          const error = await response.json()
-          alert(`Creation failed: ${error.error}`)
+          let errorMessage = `Creation failed (${response.status})`
+          const responseClone = response.clone()
+          try {
+            const error = await responseClone.json()
+            errorMessage = `Creation failed: ${error.error}`
+          } catch {
+            try {
+              const textResponse = await response.text()
+              errorMessage = `Creation failed: ${textResponse.substring(0, 200)}`
+              console.log('Server error response:', textResponse)
+            } catch {
+              errorMessage = `Creation failed: Server error (${response.status})`
+            }
+          }
+          alert(errorMessage)
         }
       }
     } catch (error) {
@@ -247,11 +285,6 @@ export default function KnowledgePage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (Object.keys(CORE_KNOWLEDGE).includes(id)) {
-      alert('Cannot delete core knowledge items')
-      return
-    }
-
     if (confirm('Are you sure you want to delete this knowledge item?')) {
       try {
         const response = await fetch(`/api/knowledge?id=${id}`, {
@@ -269,8 +302,6 @@ export default function KnowledgePage() {
       }
     }
   }
-
-  const isCore = (id: string) => Object.keys(CORE_KNOWLEDGE).includes(id)
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return ''
@@ -303,7 +334,7 @@ export default function KnowledgePage() {
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             <DocumentArrowUpIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="text-sm sm:text-base">Upload PDF</span>
+            <span className="text-sm sm:text-base">Upload PDF or DOCX</span>
           </button>
           <button
             onClick={() => setShowAddForm(true)}
@@ -351,22 +382,22 @@ export default function KnowledgePage() {
       {showUploadForm && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-            Upload PDF Document
+            Upload PDF or Word Document
           </h2>
           <form onSubmit={handleFileUpload} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                PDF File
+                PDF or Word File (.pdf, .docx)
               </label>
               <input
                 id="pdf-file"
                 type="file"
-                accept=".pdf"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 required
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Maximum file size: 10MB
+                Maximum file size: 10MB. Supported formats: PDF (.pdf) and Microsoft Word (.docx)
               </p>
             </div>
             
@@ -401,19 +432,38 @@ export default function KnowledgePage() {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Processing Strategy
+              </label>
+              <select
+                value={uploadData.strategy}
+                onChange={(e) => setUploadData(prev => ({ ...prev, strategy: e.target.value }))}
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="hybrid">Hybrid (Summary + Sections) - Recommended</option>
+                <option value="chunk">Chunk Only (Detailed sections)</option>
+                <option value="summarize">Summary Only (Overview)</option>
+                <option value="section">Section-based (Structured documents)</option>
+              </select>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Hybrid creates both a summary and detailed sections. Uses conservative token limits for reliable processing.
+              </p>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 type="submit"
                 disabled={uploadProgress}
                 className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm sm:text-base"
               >
-                {uploadProgress ? 'Processing...' : 'Upload PDF'}
+                {uploadProgress ? 'Processing...' : 'Upload File'}
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setShowUploadForm(false)
-                  setUploadData({ category: 'legal-document', tags: '' })
+                  setUploadData({ category: 'legal-document', tags: '', strategy: 'hybrid' })
                 }}
                 className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg text-sm sm:text-base"
               >
@@ -540,11 +590,6 @@ export default function KnowledgePage() {
                         • {item.fileName} {item.fileSize && `(${formatFileSize(item.fileSize)})`}
                       </span>
                     )}
-                    {isCore(item.id) && (
-                      <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-2 py-1 rounded w-fit">
-                        Core
-                      </span>
-                    )}
                     {item.documentType === 'PDF' && (
                       <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs px-2 py-1 rounded w-fit">
                         PDF
@@ -555,31 +600,26 @@ export default function KnowledgePage() {
                 <div className="flex gap-2 flex-shrink-0 ml-2">
                   <button
                     onClick={() => handleEdit(item)}
-                    disabled={isCore(item.id) || item.documentType === 'PDF'}
+                    disabled={item.documentType === 'PDF'}
                     className={`p-2 rounded-lg transition-colors ${
-                      isCore(item.id) || item.documentType === 'PDF'
+                      item.documentType === 'PDF'
                         ? 'text-gray-400 cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700' 
                         : 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900'
                     }`}
                     title={
-                      isCore(item.id) 
-                        ? 'Core knowledge items cannot be edited' 
-                        : item.documentType === 'PDF' 
-                          ? 'PDF documents cannot be edited' 
-                          : 'Edit knowledge item'
+                      item.documentType === 'PDF' 
+                        ? 'PDF documents cannot be edited' 
+                        : 'Edit knowledge item'
                     }
                   >
                     <PencilIcon className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(item.id)}
-                    disabled={isCore(item.id)}
                     className={`p-2 rounded-lg transition-colors ${
-                      isCore(item.id) 
-                        ? 'text-gray-400 cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700' 
-                        : 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900'
+                      'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900'
                     }`}
-                    title={isCore(item.id) ? 'Core knowledge items cannot be deleted' : 'Delete knowledge item'}
+                    title="Delete knowledge item"
                   >
                     <TrashIcon className="w-4 h-4" />
                   </button>

@@ -92,6 +92,12 @@ export default function SignIn() {
             </div>
           </div>
 
+          <div className="text-right mb-2">
+            <Link href="/auth/reset-password" className="text-sm text-indigo-600 hover:text-indigo-500">
+              Forgot password?
+            </Link>
+          </div>
+
           <div>
             <button
               type="submit"

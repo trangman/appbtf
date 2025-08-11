@@ -19,6 +19,7 @@ enum UserRole {
   ACCOUNTANT
   LAWYER
   EXISTING_PROPERTY_OWNER
+  PROFESSOR
 }
 
 enum DocumentType {
@@ -37,6 +38,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  uploadedManifests Manifest[] @relation("UserManifest")
+
   @@map("users")
 }
 
@@ -45,7 +48,7 @@ model Brief {
   title       String
   slug        String     @unique
   description String?
-  content     String     // MDX content
+  content     String // MDX content
   targetRoles UserRole[] // Array of roles that can access this brief
   isPublished Boolean    @default(false)
   createdAt   DateTime   @default(now())
@@ -55,31 +58,63 @@ model Brief {
 }
 
 model KnowledgeDocument {
-  id          String       @id @default(cuid())
-  title       String
-  content     String       // Extracted text content
-  category    String
-  tags        String[]
+  id           String       @id @default(cuid())
+  title        String
+  content      String // Extracted text content
+  category     String
+  tags         String[]
   documentType DocumentType
-  fileName    String?      // Original filename for uploaded files
-  fileSize    Int?         // File size in bytes
-  filePath    String?      // Path to stored file
-  embedding   Float[]      // OpenAI embeddings for semantic search
-  userId      String?      // User who uploaded the document
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  fileName     String? // Original filename for uploaded files
+  fileSize     Int? // File size in bytes
+  filePath     String? // Path to stored file
+  embedding    Float[] // OpenAI embeddings for semantic search
+  userId       String? // User who uploaded the document
+  manifests    Manifest[]   @relation("DocumentManifest")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@map("knowledge_documents")
 }
 
 model ContactSubmission {
-  id      String   @id @default(cuid())
-  name    String
-  email   String
-  subject String?
-  message String
-  userId  String?  // Optional: link to user if logged in
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  userId    String? // Optional: link to user if logged in
   createdAt DateTime @default(now())
 
   @@map("contact_submissions")
+}
+
+model AIPrompt {
+  id           String   @id @default(cuid())
+  role         UserRole // The user role this prompt is designed for
+  title        String // Descriptive name for the prompt
+  systemPrompt String // The actual system prompt content
+  isActive     Boolean  @default(true) // Whether this prompt is currently active
+  version      String   @default("1.0") // Version number for tracking changes
+  description  String? // Optional description of what this prompt does
+  createdBy    String? // Admin user who created/modified this prompt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Ensure only one active prompt per role
+  @@unique([role, isActive])
+  @@map("ai_prompts")
+}
+
+model Manifest {
+  id         String            @id @default(cuid())
+  documentId String
+  document   KnowledgeDocument @relation("DocumentManifest", fields: [documentId], references: [id])
+  uploaderId String?
+  uploader   User?             @relation("UserManifest", fields: [uploaderId], references: [id])
+  source     String? // e.g., upload, seed, API, etc.
+  notes      String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@map("manifest")
 }

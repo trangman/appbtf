@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    const validRoles = ['BUYER', 'ACCOUNTANT', 'LAWYER', 'EXISTING_PROPERTY_OWNER']
+    const validRoles = ['BUYER', 'ACCOUNTANT', 'LAWYER', 'EXISTING_PROPERTY_OWNER', 'PROFESSOR']
     if (!validRoles.includes(role)) {
       return NextResponse.json(
         { error: 'Invalid role selected' },

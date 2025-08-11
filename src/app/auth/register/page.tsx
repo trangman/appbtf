@@ -10,6 +10,7 @@ const roleOptions = [
   { value: UserRole.ACCOUNTANT, label: 'Accountant' },
   { value: UserRole.LAWYER, label: 'Lawyer' },
   { value: UserRole.EXISTING_PROPERTY_OWNER, label: 'Existing Property Owner' },
+  { value: UserRole.PROFESSOR, label: 'Professor (Test)' },
 ]
 
 export default function Register() {

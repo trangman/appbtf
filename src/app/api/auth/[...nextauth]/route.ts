@@ -8,7 +8,7 @@ import { verifyPassword } from '@/lib/auth'
 // Determine if we should use Supabase API (for production/serverless environments)
 const useSupabaseApi = process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_SUPABASE_URL
 
-export const authOptions: AuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',

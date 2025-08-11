@@ -11,19 +11,23 @@ import {
   PhoneIcon,
   BookOpenIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  CogIcon
 } from '@heroicons/react/24/outline'
 import ThemeToggle from '@/components/ThemeToggle'
 
 const baseNavigation = [
   { name: 'Legal Briefs', href: '/dashboard', icon: DocumentTextIcon },
-  { name: 'Ask the Expert', href: '/dashboard/ai-assistant', icon: ChatBubbleLeftRightIcon },
+  { name: 'Ask the Professor', href: '/dashboard/ai-assistant', icon: ChatBubbleLeftRightIcon },
   { name: 'Contact', href: '/dashboard/contact', icon: PhoneIcon },
   { name: 'Profile', href: '/dashboard/profile', icon: UserIcon },
 ]
 
 const adminNavigation = [
   { name: 'Knowledge Base', href: '/dashboard/knowledge', icon: BookOpenIcon },
+  { name: 'Brief Management', href: '/dashboard/briefs-admin', icon: DocumentTextIcon },
+  { name: 'AI Prompts', href: '/dashboard/ai-prompts', icon: CogIcon },
+  { name: 'User Management', href: '/dashboard/users', icon: UserIcon },
 ]
 
 function getNavigationItems(isAdmin: boolean) {
@@ -40,7 +44,7 @@ function DashboardLayoutContent({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   
   // Check if user is admin
-  const user = session?.user as any
+  const user = session?.user as { isAdmin?: boolean; email?: string; name?: string; role?: string }
   const isAdmin = user?.isAdmin || false
   const navigation = getNavigationItems(isAdmin)
 
