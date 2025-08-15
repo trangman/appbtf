@@ -1,0 +1,24 @@
+# Temporary robots.txt - Disallow all crawlers
+# This prevents search engines from indexing the site during development
+
+User-agent: *
+Disallow: /
+
+# Block common crawlers explicitly
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: Slurp
+Disallow: /
+
+User-agent: DuckDuckBot
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: YandexBot
+Disallow: /
