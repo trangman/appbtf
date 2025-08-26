@@ -45,7 +45,7 @@ export default function KnowledgePage() {
     if (status === 'loading') return // Still loading
     
     if (status === 'unauthenticated') {
-      router.push('/auth/signin')
+      router.push('/signin')
       return
     }
     

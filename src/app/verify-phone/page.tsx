@@ -24,7 +24,7 @@ function VerifyPhoneContent() {
     // Check if we have a verification token from email
     const token = searchParams.get('token')
     if (!token) {
-      router.push('/auth/register')
+      router.push('/register')
     }
   }, [router, searchParams])
 
@@ -103,7 +103,7 @@ function VerifyPhoneContent() {
         // Clear session storage
         sessionStorage.removeItem('registrationData')
         // Redirect to success page or dashboard
-        router.push('/auth/signin?message=Registration completed successfully. Please sign in.')
+        router.push('/signin?message=Registration completed successfully. Please sign in.')
       } else {
         const data = await response.json()
         setError(data.error || 'Invalid verification code')

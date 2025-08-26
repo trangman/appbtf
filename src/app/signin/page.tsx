@@ -106,7 +106,7 @@ export default function SignIn() {
             {/* Forgot Password Link */}
             <div className="text-right">
               <Link 
-                href="/auth/reset-password" 
+                href="/reset-password" 
                 className="text-slate-300 hover:text-white text-sm underline"
               >
                 Forgot password?

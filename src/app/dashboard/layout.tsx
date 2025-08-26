@@ -51,7 +51,7 @@ function DashboardLayoutContent({
   useEffect(() => {
     if (status === 'loading') return
     if (!session) {
-      router.push('/auth/signin')
+      router.push('/signin')
     }
   }, [session, status, router])
 
@@ -68,7 +68,7 @@ function DashboardLayoutContent({
   }
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: '/auth/signin' })
+            signOut({ callbackUrl: '/signin' })
   }
 
   return (

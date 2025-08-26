@@ -25,7 +25,7 @@ export default function VerifyEmail() {
       sendVerificationEmail(data)
     } else {
       // Redirect to register if no data found
-      router.push('/auth/register')
+      router.push('/register')
     }
   }, [router])
 
@@ -107,7 +107,7 @@ export default function VerifyEmail() {
             {/* Back to Register */}
             <div className="text-center">
               <Link
-                href="/auth/register"
+                href="/register"
                 className="text-slate-300 hover:text-white text-sm underline"
               >
                 Back to Registration

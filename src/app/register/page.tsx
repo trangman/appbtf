@@ -50,7 +50,7 @@ export default function Register() {
       sessionStorage.setItem('registrationData', JSON.stringify(formData))
       
       // Redirect to email verification page
-      router.push('/auth/verify-email')
+      router.push('/verify-email')
     } catch {
       setError('An error occurred. Please try again.')
     } finally {

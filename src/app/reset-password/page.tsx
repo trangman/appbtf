@@ -99,7 +99,7 @@ export default function ResetPassword() {
             {/* Back to Sign In Link */}
             <div className="text-center">
               <Link
-                href="/auth/signin"
+                href="/signin"
                 className="text-slate-300 hover:text-white text-sm underline"
               >
                 Back to Sign In

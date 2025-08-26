@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     // 2. Send an email with the verification link
     
     // For development, we'll log the verification link
-    const verificationUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/verify-phone?token=${token}`
+          const verificationUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-phone?token=${token}`
     
     console.log('=== EMAIL VERIFICATION ===')
     console.log(`To: ${email}`)
