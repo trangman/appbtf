@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       // Create user using Supabase API
       const user = await supabaseDb.createUser({
         email,
-        password: hashedPassword,
+        hashedPassword,
         name: name || undefined,
         role,
       })
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       const user = await prisma.user.create({
         data: {
           email,
-          password: hashedPassword,
+          hashedPassword,
           name: name || null,
           role: role as UserRole,
         },

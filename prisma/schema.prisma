@@ -29,14 +29,17 @@ enum DocumentType {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  role      UserRole
-  isAdmin   Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  hashedPassword String?   // Made optional for OAuth users
+  name          String?
+  image         String?
+  phoneNumber   String?
+  role          UserRole
+  isAdmin       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   uploadedManifests Manifest[] @relation("UserManifest")
 
