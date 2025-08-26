@@ -1,9 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 
-export default function VerifyPhone() {
+// Force dynamic rendering to avoid static generation issues with useSearchParams
+export const dynamic = 'force-dynamic'
+
+function VerifyPhoneContent() {
   const [formData, setFormData] = useState({
     countryCode: '+1',
     phoneNumber: '',
@@ -150,8 +154,14 @@ export default function VerifyPhone() {
           <div className="bg-slate-700 rounded-lg p-8 shadow-xl">
             {/* Logo */}
             <div className="flex justify-center mb-8">
-              <div className="w-16 h-16 bg-slate-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">B|F</span>
+              <div className="w-16 h-16 flex items-center justify-center">
+                <Image
+                  src="/btf-logo.svg"
+                  alt="Better Than Freehold"
+                  width={64}
+                  height={64}
+                  className="w-16 h-16"
+                />
               </div>
             </div>
 
@@ -251,8 +261,14 @@ export default function VerifyPhone() {
         <div className="bg-slate-700 rounded-lg p-8 shadow-xl">
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 bg-slate-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">B|F</span>
+            <div className="w-16 h-16 flex items-center justify-center">
+              <Image
+                src="/btf-logo.svg"
+                alt="Better Than Freehold"
+                width={64}
+                height={64}
+                className="w-16 h-16"
+              />
             </div>
           </div>
 
@@ -353,5 +369,43 @@ export default function VerifyPhone() {
         </div>
       </div>
     </div>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-800 py-12 px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-slate-700 rounded-lg p-8 shadow-xl">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <div className="w-16 h-16 flex items-center justify-center">
+              <Image
+                src="/btf-logo.svg"
+                alt="Better Than Freehold"
+                width={64}
+                height={64}
+                className="w-16 h-16"
+              />
+            </div>
+          </div>
+
+          {/* Loading */}
+          <div className="text-center">
+            <p className="text-slate-300 text-sm mb-4">Better Than Freehold</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+            <p className="text-white text-lg mt-4">Loading verification...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function VerifyPhone() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <VerifyPhoneContent />
+    </Suspense>
   )
 }

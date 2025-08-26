@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -46,8 +47,14 @@ export default function SignIn() {
         <div className="bg-slate-700 rounded-lg p-8 shadow-xl">
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 bg-slate-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">B|F</span>
+            <div className="w-16 h-16 flex items-center justify-center">
+              <Image
+                src="/btf-logo.svg"
+                alt="Better Than Freehold"
+                width={64}
+                height={64}
+                className="w-16 h-16"
+              />
             </div>
           </div>
 
