@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
+import LogoHeader from '@/components/LogoHeader'
 
 // Force dynamic rendering to avoid static generation issues with sessionStorage
 export const dynamic = 'force-dynamic'
@@ -29,7 +29,7 @@ export default function VerifyEmail() {
     }
   }, [router])
 
-  const sendVerificationEmail = async (data: any) => {
+  const sendVerificationEmail = async (data: { email: string; name: string; role: string }) => {
     try {
       const response = await fetch('/api/auth/send-verification', {
         method: 'POST',
@@ -63,18 +63,8 @@ export default function VerifyEmail() {
     <div className="min-h-screen flex items-center justify-center bg-slate-800 py-12 px-4">
       <div className="w-full max-w-md">
         <div className="bg-slate-700 rounded-lg p-8 shadow-xl">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 flex items-center justify-center">
-              <Image
-                src="/btf-logo.svg"
-                alt="Better Than Freehold"
-                width={64}
-                height={64}
-                className="w-16 h-16"
-              />
-            </div>
-          </div>
+                    {/* Logo */}
+          <LogoHeader />
 
           {/* Header */}
           <div className="text-center mb-8">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Image from 'next/image'
+import LogoHeader from '@/components/LogoHeader'
 
 // Force dynamic rendering to avoid static generation issues with useSearchParams
 export const dynamic = 'force-dynamic'
@@ -153,17 +153,7 @@ function VerifyPhoneContent() {
         <div className="w-full max-w-md">
           <div className="bg-slate-700 rounded-lg p-8 shadow-xl">
             {/* Logo */}
-            <div className="flex justify-center mb-8">
-              <div className="w-16 h-16 flex items-center justify-center">
-                <Image
-                  src="/btf-logo.svg"
-                  alt="Better Than Freehold"
-                  width={64}
-                  height={64}
-                  className="w-16 h-16"
-                />
-              </div>
-            </div>
+            <LogoHeader />
 
             {/* Header */}
             <div className="text-center mb-8">
@@ -260,17 +250,7 @@ function VerifyPhoneContent() {
       <div className="w-full max-w-md">
         <div className="bg-slate-700 rounded-lg p-8 shadow-xl">
           {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 flex items-center justify-center">
-              <Image
-                src="/btf-logo.svg"
-                alt="Better Than Freehold"
-                width={64}
-                height={64}
-                className="w-16 h-16"
-              />
-            </div>
-          </div>
+          <LogoHeader />
 
           {/* Header */}
           <div className="text-center mb-8">
@@ -378,17 +358,7 @@ function LoadingFallback() {
       <div className="w-full max-w-md">
         <div className="bg-slate-700 rounded-lg p-8 shadow-xl">
           {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 flex items-center justify-center">
-              <Image
-                src="/btf-logo.svg"
-                alt="Better Than Freehold"
-                width={64}
-                height={64}
-                className="w-16 h-16"
-              />
-            </div>
-          </div>
+          <LogoHeader />
 
           {/* Loading */}
           <div className="text-center">

@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import LogoHeader from '@/components/LogoHeader';
+
+// Force dynamic rendering to avoid static generation issues
+export const dynamic = 'force-dynamic'
 
 export default function ResetPassword() {
   const [email, setEmail] = useState("");
@@ -34,31 +38,40 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Reset Your Password
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email address and we&apos;ll send you a link to reset your password.
-          </p>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-              {success}
-            </div>
-          )}
-          <div className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-800 py-12 px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-slate-700 rounded-lg p-8 shadow-xl">
+                     {/* Logo */}
+           <LogoHeader />
+
+          {/* Header */}
+          <div className="text-center mb-8">
+            <p className="text-slate-300 text-sm mb-4">Better Than Freehold</p>
+            <h1 className="text-white text-2xl font-semibold mb-4">
+              Reset Your Password
+            </h1>
+            <p className="text-slate-300 text-sm">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg text-sm">
+                {success}
+              </div>
+            )}
+
+            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address
+              <label htmlFor="email" className="block text-white text-sm font-medium mb-2">
+                Email Address <span className="text-red-400">*</span>
               </label>
               <input
                 id="email"
@@ -66,29 +79,34 @@ export default function ResetPassword() {
                 type="email"
                 autoComplete="email"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="w-full px-4 py-3 bg-slate-600 border border-slate-500 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter your email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
               />
             </div>
-          </div>
-          <div>
+
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-800 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
             >
               {loading ? "Sending..." : "Send Reset Link"}
             </button>
-          </div>
-          <div className="text-center">
-            <Link href="/auth/signin" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Back to Sign In
-            </Link>
-          </div>
-        </form>
+
+            {/* Back to Sign In Link */}
+            <div className="text-center">
+              <Link
+                href="/auth/signin"
+                className="text-slate-300 hover:text-white text-sm underline"
+              >
+                Back to Sign In
+              </Link>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
